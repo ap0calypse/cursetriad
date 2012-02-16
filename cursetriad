@@ -1,0 +1,144 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Curses;
+use Time::HiRes qw(usleep);
+
+
+# name:     triadgame
+# author:   Manuel Fill (ap0calypse@agitatio.org)
+# purpose:  Remake of the famous triple triad game from final fantasy VIII
+# license:  if not specified, it's under GPL
+
+initscr;
+clear;
+noecho;
+start_color;
+raw;
+
+# check if terminal is big enough
+if ($COLS < 45 || $LINES < 42) {
+    endwin();
+    print "Your terminal window needs to be bigger.\n";
+    exit(1);
+}
+
+my %coords_to_num = (
+    '1' => [0, 0], '2' => [0, 15], '3' => [0, 30], '4' => [10, 0], '5' => [10, 15],
+    '6' => [10, 30], '7' => [20, 0], '8' => [20, 15], '9' => [20, 30]
+);
+my %coords_to_deck = (
+    '1' => [31, 0], '2' => [31, 7], '3' => [31, 15], '4' => [31, 23], '5' => [31, 30]
+);
+
+our $board;
+
+my $deck;
+
+
+my $mainwin = newwin(42, 45, 0, 0);
+box($mainwin, 0,0);
+addstr($mainwin, 30, 1, "Your deck:");
+
+refresh($mainwin);
+
+
+# fill up the game field with card positions 1 to 9 and the deck positions
+# from 1 to 5
+
+for (1 .. 5) {
+    $deck->{$_}{'win'} = newwin(10,15, @{$coords_to_deck{$_}});
+    $deck->{$_}{'u'} = 0;
+    $deck->{$_}{'d'} = 0;
+    $deck->{$_}{'l'} = 0;
+    $deck->{$_}{'r'} = 0;
+    box($deck->{$_}{'win'}, 0,0);
+}
+
+for (1 .. 9) {
+    $board->{$_}{'win'} = newwin(10,15, @{$coords_to_num{$_}});
+    $board->{$_}{'u'} = 0;
+    $board->{$_}{'d'} = 0;
+    $board->{$_}{'l'} = 0;
+    $board->{$_}{'r'} = 0;
+    box($board->{$_}{'win'}, 0,0);
+}
+
+# func: set_vals
+# needs the card number and the values for up, down, left and right
+
+sub set_vals {
+    my ($n, $u, $d, $l, $r) = @_;
+    $board->{$n}{'u'} =  $u;
+    $board->{$n}{'d'} =  $d;
+    $board->{$n}{'l'} =  $l;
+    $board->{$n}{'r'} =  $r;
+}
+
+
+sub set_dvals {
+    my ($n, $u, $d, $l, $r) = @_;
+    $deck->{$n}{'u'} =  $u;
+    $deck->{$n}{'d'} =  $d;
+    $deck->{$n}{'l'} =  $l;
+    $deck->{$n}{'r'} =  $r;
+}
+
+
+init_pair(1, 1, 0); # red on black
+init_pair(2, 0, 0); # black on black
+init_pair(3, 2, 0); # green on black
+init_pair(4, 2, 0); # urm .. dn
+init_pair(5, 2, 0); # dn
+
+
+# refresh everything
+sub refresh_board {
+    for (1..9) { 
+        addstr($board->{$_}{'win'}, 1, 2, $board->{$_}{'u'});
+        addstr($board->{$_}{'win'}, 3, 2, $board->{$_}{'d'});
+        addstr($board->{$_}{'win'}, 2, 1, $board->{$_}{'l'});
+        addstr($board->{$_}{'win'}, 2, 3, $board->{$_}{'r'});
+        refresh($board->{$_}{'win'}); 
+    }
+    for (1..5) { 
+        addstr($deck->{$_}{'win'}, 1, 2, $deck->{$_}{'u'});
+        addstr($deck->{$_}{'win'}, 3, 2, $deck->{$_}{'d'});
+        addstr($deck->{$_}{'win'}, 2, 1, $deck->{$_}{'l'});
+        addstr($deck->{$_}{'win'}, 2, 3, $deck->{$_}{'r'});
+        refresh($deck->{$_}{'win'}); 
+    }
+    refresh($mainwin);
+    doupdate;
+}
+
+sub copy_card {
+    my ($from, $to) = @_;
+    $board->{$to}{'u'} = $deck->{$from}{'u'};
+    $board->{$to}{'d'} = $deck->{$from}{'d'};
+    $board->{$to}{'l'} = $deck->{$from}{'l'};
+    $board->{$to}{'r'} = $deck->{$from}{'r'};
+}
+
+# needed! if you delete this, i'll kill you, srsly!
+keypad($mainwin,1);
+timeout($mainwin, 0);
+my $i = 0;
+while(1) {
+    $i++;
+    refresh_board();
+    usleep(500000);
+    my $in = getch($mainwin);
+
+    if ($i == 4) {
+        set_dvals(1, 4,4,4,4);
+    }
+    
+    if ($in eq "q") {
+        endwin();
+        exit(0);
+    }
+    if ($i >= 10) {
+        copy_card(1,8);
+    }
+}
