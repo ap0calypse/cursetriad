@@ -122,7 +122,7 @@ Laguna/5:3:9:A
 Selphie/A:6:4:8
 Quistis/9:A:2:6
 Irvine/2:9:A:6
-Zell/8:A.6:5
+Zell/8:A:6:5
 Rinoa/4:2:A:A
 Edea/A:3:3:A
 Seifer/6:A:4:9

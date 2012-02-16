@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use Curses;
 use Time::HiRes qw(usleep);
+use Data::Dumper;
 
 
 # name:     triadgame
@@ -16,13 +17,12 @@ open my $CF, "< $cardfile" or die "can't open cardfile!";
 while (my $line = <$CF>) {
     next if $line =~ m/^#.*/;
     next if $line =~ m/^ *$/;
-    if ($line =~ m/^([a-zA-Z0-9 \-\&]+)\[?(.+)?\]?\/(\d|A?):(\d|A?):(\d|A?):(\d|A?)$/) {
-        print "match-> $1\n";
+    if ($line =~ m/^([a-zA-Z0-9 \-\&]+)\[?([a-zA-Z]+)?\]?\/(\d|A?):(\d|A?):(\d|A?):(\d|A?)$/) {
+        $cards->{$1}{'elem'} = $2;
+        ($cards->{$1}{'u'}, $cards->{$1}{'d'}, $cards->{$1}{'l'}, $cards->{$1}{'r'}) = ($3, $4, $5, $6);
     }
 }
 close $CF;
-exit(1);
-
 
 initscr;
 clear;
@@ -106,6 +106,23 @@ init_pair(4, 2, 0); # urm .. dn
 init_pair(5, 2, 0); # dn
 
 
+sub draw_dpics {
+    my ($n, $p) = @_;
+    if (length $p < 36) {
+        return 1;
+    }
+    my @ar = split //, $p;
+    for my $h (0 .. 5) {
+        for my $w (0 .. 5) {
+            addstr($deck->{$n}{'win'}, 2+$w, 5+$h, $ar[$h*$w+$w]);
+        }
+    }
+    refresh($deck->{$n}{'win'});
+    doupdate;
+}
+
+
+
 # refresh everything
 sub refresh_board {
     for (1..9) { 
@@ -135,6 +152,18 @@ sub copy_card {
 }
 
 # needed! if you delete this, i'll kill you, srsly!
+
+for (1 .. 5) {
+    my $key = (keys %{$cards})[rand keys %{$cards}];
+    set_dvals($_, $cards->{$key}{'u'}, $cards->{$key}{'d'}, $cards->{$key}{'l'}, $cards->{$key}{'r'});
+}
+
+draw_dpics(5, "+++++++++++++++++++++++++++++++++++++++++++");
+#draw_dpics(4, "+++++++++++++++++++++++++++++++++++++++++++");
+#draw_dpics(3, "+++++++++++++++++++++++++++++++++++++++++++");
+#draw_dpics(2, "+++++++++++++++++++++++++++++++++++++++++++");
+#draw_dpics(1, "+++++++++++++++++++++++++++++++++++++++++++");
+
 keypad($mainwin,1);
 timeout($mainwin, 0);
 my $i = 0;
@@ -143,16 +172,9 @@ while(1) {
     refresh_board();
     usleep(500000);
     my $in = getch($mainwin);
-
-    if ($i == 4) {
-        set_dvals(1, 4,4,4,4);
-    }
     
     if ($in eq "q") {
         endwin();
         exit(0);
-    }
-    if ($i >= 10) {
-        copy_card(1,8);
     }
 }
