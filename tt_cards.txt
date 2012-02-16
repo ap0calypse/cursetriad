@@ -1,0 +1,129 @@
+# Level 1 Cards
+Geezard/1:1:5:4
+Funguar/5:1:3:1
+Bite Bug/1:3:5:3
+Red Bat/6:1:2:1
+Blobra/2:1:5:3
+Gayla/2:4:4:1
+Gesper/1:4:1:5
+Fastitocalon-F/3:2:5:1
+Blood Soul/2:6:1:1
+Caterchipillar/4:4:2:3
+Cockatrice/2:2:6:1
+
+# Level 2 Cards
+Grat/7:3:1:1
+Buel/6:2:3:2
+Mesmerize/5:3:4:3
+Glacial Eye[Ice]/6:4:3:1
+Belhelmel/3:5:3:4
+Thrustaevis[Wind]/5:2:5:3
+Anacondaur[Poison]/5:3:5:1
+Creeps[Lightning]/5:5:2:2
+Grendel[Lightning]/4:5:2:4
+Jellyeye/3:1:7:2
+Grand Mantis[Lightning]/5:5:3:2
+
+# Level 3 Cards
+Forbidden/6:3:2:6
+Armadodo[Earth]/6:1:6:3
+Tri-Face[Poison]/3:5:5:5
+Fastitocalon[Earth]/7:1:3:5
+Snow Lion[Ice]/7:5:3:1
+Ochu/5:3:3:6
+SAM08G[Fire]/5:2:4:6
+Death Claw[Fire]/4:7:2:4
+Cactuar/6:6:3:2
+Tonberry/3:4:4:6
+Abyss Worm[Earth]/7:3:5:2
+
+# Level 4 Cards
+Turtapod/2:6:7:3
+Vysage/6:4:5:5
+T-Rexaur/4:6:7:2
+Bomb[Fire]/2:6:3:7
+Blitz[Lightning]/1:4:7:6
+Wendigo/7:1:6:3
+Torama/7:4:4:4
+Imp/3:3:6:7
+Blue Dragon[Poison]/6:7:3:2
+Adamantoise[Earth]/4:5:6:5
+Hexadragon[Fire]/7:4:3:5
+
+# Level 5 Cards
+Iron Giant/6:6:5:5
+Behemoth/3:5:7:6
+Chimera[Water]/7:5:3:6
+Pupu/3:2:1:A
+Elastoid/6:6:7:2
+GIM47N/5:7:4:5
+Malboro[Poison]/7:4:2:7
+Ruby Dragon[Fire]/7:7:4:2
+Elnoyle/5:2:6:3
+Tonberry King/4:7:4:6
+Wedge & Biggs/6:2:7:6
+
+# Level 6 Cards
+Fujin and Raijin/2:8:4:8
+Elvoret[Wind]/7:3:4:8
+X-ATM092/4:7:3:8
+Granaldo/7:8:5:2
+Gerogero[Poison]/1:6:3:8
+Iguion/8:8:2:2
+Abadon/6:4:5:8
+Trauma/4:5:6:8
+Oilboyle/1:4:8:8
+Shumi Tribe/6:8:4:5
+Krysta/7:8:1:5
+
+# Level 7 Cards
+Propagator/8:4:8:4
+Jumbo Cactuar/8:4:4:8
+Tri-Point[Lightning]/8:2:8:5
+Gargantua/5:6:8:6
+Mobile Type 8/8:7:3:6
+Sphinxara/8:5:8:3
+Tiamat/8:5:4:8
+BGH251F2/5:8:5:7
+Red Giant/6:4:7:8
+Catoblepas/1:7:7:8
+Ultima Weapon/7:2:8:7
+
+# Level 8 Cards
+Chubby Chocobo/4:8:9:4
+Angelo/9:7:3:6
+Gilgamesh/3:9:6:7
+Minimog/9:9:2:3
+Chicobo/9:8:4:4
+Quezacotl[Lightning]/2:9:4:9
+Shiva[Ice]/6:5:9:7
+Ifrit[Fire]/9:2:8:6
+Siren/8:6:2:9
+Sacred[Earth]/5:9:9:1
+Minotaur[Earth]/9:2:9:5
+
+# Level 9 Cards
+Carbuncle/8:A:4:4
+Diablos/5:8:3:A
+Leviathan[Water]/7:1:7:A
+Odin/8:3:5:A
+Pandemona[Wind]/A:7:7:1
+Cerebus/7:6:A:4
+Alexander[Holy]/9:4:2:A
+Phoenix[Fire]/7:7:A:2
+Bahamut/A:2:6:8
+Doomtrain[Poison]/3:A:A:1
+Eden/4:9:A:4
+
+# Level 10 Cards
+Ward/A:2:8:7
+Kiros/6:6:A:7
+Laguna/5:3:9:A
+Selphie/A:6:4:8
+Quistis/9:A:2:6
+Irvine/2:9:A:6
+Zell/8:A.6:5
+Rinoa/4:2:A:A
+Edea/A:3:3:A
+Seifer/6:A:4:9
+Squall/A:6:9:4
