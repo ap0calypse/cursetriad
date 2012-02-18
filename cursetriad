@@ -11,12 +11,15 @@ use Data::Dumper;
 # purpose:  Remake of the famous triple triad game from final fantasy VIII
 # license:  if not specified, it's under GPL
 
+
+# read in all cards from tt_cards.txt. should be 110 card types.
+# they are all stored in this hash-reference
+
 my $cards;
 my $cardfile = "./tt_cards.txt";
 open my $CF, "< $cardfile" or die "can't open cardfile!";
 while (my $line = <$CF>) {
-    next if $line =~ m/^#.*/;
-    next if $line =~ m/^ *$/;
+    next if $line =~ m/^#.*/ || $line =~ m/^ *$/;
     if ($line =~ m/^([a-zA-Z0-9 \-\&]+)\[?([a-zA-Z]+)?\]?\/(\d|A?):(\d|A?):(\d|A?):(\d|A?)$/) {
         $cards->{$1}{'elem'} = $2;
         ($cards->{$1}{'u'}, $cards->{$1}{'d'}, $cards->{$1}{'l'}, $cards->{$1}{'r'}) = ($3, $4, $5, $6);
@@ -24,13 +27,12 @@ while (my $line = <$CF>) {
 }
 close $CF;
 
-
-
+# initialize curses
 initscr;
 clear;
 noecho;
 start_color;
-raw;
+raw;            # because we want the keys immediately
 
 # check if terminal is big enough
 if ($COLS < 87 || $LINES < 34) {
@@ -51,17 +53,14 @@ my %coords_to_opdeck = (
     '1' => [1, 1], '2' => [8, 1], '3' => [15, 1], '4' => [1, 11], '5' => [8, 11]
 );
 
-our $board;
+my ($board, $deck, $opdeck);    # playboard, players deck, opponents deck
 
-my $deck;
-my $opdeck;
-
+# create and draw main- and info-window
 
 my $mainwin = newwin(34, 87, 0, 0);
-my $infowin = newwin(5, 50, 24, 12);
+my $infowin = subwin($mainwin, 5, 50, 24, 12);
 box($mainwin, 0,0);
 box($infowin, 0,0);
-
 refresh($mainwin);
 refresh($infowin);
 
@@ -70,7 +69,7 @@ refresh($infowin);
 # from 1 to 5
 
 for (1 .. 5) {
-    $deck->{$_}{'win'} = newwin(7,10, @{$coords_to_deck{$_}});
+    $deck->{$_}{'win'} = subwin($mainwin, 7,10, @{$coords_to_deck{$_}});
     $deck->{$_}{'u'} = "";
     $deck->{$_}{'d'} = "";
     $deck->{$_}{'l'} = "";
@@ -80,7 +79,7 @@ for (1 .. 5) {
 }
 
 for (1 .. 5) {
-    $opdeck->{$_}{'win'} = newwin(7,10, @{$coords_to_opdeck{$_}});
+    $opdeck->{$_}{'win'} = subwin($mainwin, 7,10, @{$coords_to_opdeck{$_}});
     $opdeck->{$_}{'u'} = "";
     $opdeck->{$_}{'d'} = "";
     $opdeck->{$_}{'l'} = "";
@@ -90,12 +89,13 @@ for (1 .. 5) {
 }
 
 for (1 .. 9) {
-    $board->{$_}{'win'} = newwin(7,10, @{$coords_to_num{$_}});
+    $board->{$_}{'win'} = subwin($mainwin, 7,10, @{$coords_to_num{$_}});
     $board->{$_}{'u'} = "";
     $board->{$_}{'d'} = "";
     $board->{$_}{'l'} = "";
     $board->{$_}{'r'} = "";
     $board->{$_}{'touched'} = 0;
+    $board->{$_}{'owner'} = 0; # space belongs to no one ... when played, this turns into H or C
     box($board->{$_}{'win'}, 0,0);
 }
 
@@ -194,6 +194,7 @@ sub refresh_board {
 
 sub copy_card {
     my ($from, $to) = @_;
+    overwrite($deck->{$from}{'win'}, $board->{$to}{'win'});
     $board->{$to}{'u'} = $deck->{$from}{'u'};
     $board->{$to}{'d'} = $deck->{$from}{'d'};
     $board->{$to}{'l'} = $deck->{$from}{'l'};
@@ -255,7 +256,8 @@ my $whosturn = 1; # 0 = comp, 1 = human
 while(1) {
     if ($whosturn) {
         $i++;
-        addstr($infowin, 1, 2, $i);
+        addstr($infowin, 1,1, "                                ");
+        addstr($infowin, 1, 1, "TURN: Player");
         refresh($infowin);
 
         refresh_board();
@@ -307,27 +309,49 @@ while(1) {
                 if ($blu eq KEY_LEFT) {
                     if ($boardfocus > 1) {
                         $boardfocus--;
-                        focus_win($boardfocus, "board");
+                        if ($board->{$boardfocus}{'touched'} == 0) {
+                            focus_win($boardfocus, "board");
+                        }
+                        else { 
+                            while ($board->{$boardfocus}{'touched'} == 1) {
+                                $boardfocus--;
+                                    if ($boardfocus == 0) {
+                                        $boardfocus = 9;
+                                    }
+                            }
+                            focus_win($boardfocus, "board");
+                        }
                     }
                 }
                 if ($blu eq KEY_RIGHT) {
                     if ($boardfocus < 9) {
                         $boardfocus++;
-                        focus_win($boardfocus, "board");
+                        if ($board->{$boardfocus}{'touched'} == 0) {
+                            focus_win($boardfocus, "board");
+                        }
+                        else { 
+                            while ($board->{$boardfocus}{'touched'} == 1) {
+                                $boardfocus++;
+                                    if ($boardfocus == 10) {
+                                        $boardfocus = 1;
+                                    }
+                            }
+                            focus_win($boardfocus, "board");
+                        }
                     }
                 }
-                if ($blu eq KEY_UP) {
-                    if ($boardfocus > 3) {
-                        $boardfocus -= 3;
-                        focus_win($boardfocus, "board");
-                    }
-                }
-                if ($blu eq KEY_DOWN) {
-                    if ($boardfocus < 7) {
-                        $boardfocus += 3;
-                        focus_win($boardfocus, "board");
-                    }
-                }
+                #if ($blu eq KEY_UP) {
+                #    if ($boardfocus > 3) {
+                #        $boardfocus -= 3;
+                #        focus_win($boardfocus, "board");
+                #    }
+                #}
+                #if ($blu eq KEY_DOWN) {
+                #    if ($boardfocus < 7) {
+                #        $boardfocus += 3;
+                #        focus_win($boardfocus, "board");
+                #    }
+                #}
                 if ($blu eq ".") {
                     last;
                 }
@@ -336,8 +360,16 @@ while(1) {
             copy_card($curfocus, $boardfocus);
             $deck->{$curfocus}{'touched'} = 1;
             $board->{$boardfocus}{'touched'} = 1;
-            check_played();
-#        timeout($mainwin, 0);
+            $board->{$boardfocus}{'owner'} = "H";
+            $whosturn = 0; # now it's comps choice
         }
+    }
+    else {
+        refresh_board();
+        addstr($infowin, 1,1, "                                ");
+        addstr($infowin, 1,1, "TURN: Computer");
+        refresh($infowin);
+        sleep(5);
+        $whosturn = 1;
     }
 }
