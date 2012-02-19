@@ -360,12 +360,8 @@ while(1) {
             copy_card($curfocus, $boardfocus);
             $deck->{$curfocus}{'touched'} = 1;
             $board->{$boardfocus}{'touched'} = 1;
-<<<<<<< HEAD
             $board->{$boardfocus}{'owner'} = "H";
             $whosturn = 0; # now it's comps choice
-=======
-            #$whosturn = 0; # now it's comps choice
->>>>>>> 68f3651935924e7fe8661cee5ab7de129b6126e4
         }
     }
     else {
