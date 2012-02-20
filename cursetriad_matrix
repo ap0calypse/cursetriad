@@ -1,0 +1,167 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Curses;
+use Time::HiRes qw(usleep);
+use Data::Dumper;
+
+
+# needed variables
+
+my ($bm, $d, $o);   # board-matrix reference, deck-ref, comp-deck
+my $c;              # card reference 
+my $cardfile = "./tt_cards.txt";
+my @score = (5, 5); # keep score .. obviously ...
+
+my %co_b = ( # coords for the windows in the board
+        '1,1' => [1, 22],  '1,2' => [1, 32],  '1,3' => [1, 42], 
+        '2,1' => [8, 22],  '2,2' => [8, 32],  '2,3' => [8, 42], 
+        '3,1' => [15, 22], '3,2' => [15, 32], '3,3' => [15, 42] 
+);
+my %co_d = ( # coords to human deck
+    '1' => [1, 53], '2' => [8, 53], '3' => [15, 53], '4' => [1, 63], '5' => [8, 63] 
+);
+
+my %co_o = ( # coords to computer deck
+    '1' => [1, 1], '2' => [8, 1], '3' => [15, 1], '4' => [1, 11], '5' => [8, 11] 
+);
+
+
+
+# read in cards from cardfile
+
+open my $CF, "< $cardfile" or die "can't open cardfile!";
+while (my $l = <$CF>) {
+    next if $l =~ m/^#.*/ || $l =~ m/^ *$/;  # skip empty lines and comments
+    if ($l =~ m/^([a-zA-Z0-9 \-\&]+)\[?(\w+)?\]?\/(\d|A?):(\d|A?):(\d|A?):(\d|A?)$/) {
+        $c->{$1}{'elem'} = $2; 
+        ($c->{$1}{'t'}, $c->{$1}{'b'}, $c->{$1}{'l'}, $c->{$1}{'r'}) = ($3, $4, $5, $6);
+    }   
+}
+close $CF;
+
+# START OF FUNCTIONS
+# ................................................
+
+
+# function: get_neighbours
+# needs coords as 2 params, returns a list of tupels of all neighbours
+# ................................................
+sub get_neighbours {
+    my ($X, $Y) = @_;
+    my @res;
+    my @checks = ([$X, $Y+1], [$X, $Y-1], [$X-1, $Y], [$X+1, $Y]);
+    for my $c (@checks) {
+        next if $c->[0] == 0 || $c->[0] == 4;
+        next if $c->[1] == 0 || $c->[1] == 4;
+        push @res, [$c->[0], $c->[1]];
+    }
+    return @res;
+}
+# ................................................
+
+# function: find_cards_in_nbh
+# searches the board in the neighbourhood for a given owner
+# 1 = human, 0 = comp
+# returns a list of tupels with the coords
+# ................................................
+sub find_cards_in_nbh {
+    my ($X, $Y) = (shift, shift);
+    my $type = shift;
+    my @all = get_neighbours($X, $Y);
+    my @res;
+    for my $c (@all) {
+        if ($bm->{$c->[0]}{$c->[1]}{'owner'} eq $type) {
+            push @res, [$c->[0], $c->[1]];
+        }
+    }
+    return @res;
+}
+# ................................................
+
+# function: a2num
+# converts the values from the cards to decimal,
+# in fact, it does only convert A to 10 ...
+# ................................................
+sub a2num {
+    my $val = shift;
+    if ($val eq "A") {
+        $val = 10;
+    }
+    return $val;
+}
+# ................................................
+
+
+# function: free_fields
+# counts the number of free fields on the board
+# ................................................
+sub free_fields {
+    my $i = 0;
+    for my $x (1 .. 3) {
+        for my $y (1 .. 3) {
+            if ($bm->{$x}{$y}{'owner'} == 2) {
+                $i++;
+            }
+        }
+    }
+    return $i;
+}
+# ................................................
+
+# function: set_deck 
+# sets the deck of human or comp to a specific value
+# ................................................
+sub set_deck {
+    my ($type, $n, $t, $b, $l, $r) = @_;
+    if ($type) { # human deck
+        ($d->{$n}{'t'}, $d->{$n}{'b'}, $d->{$n}{'l'}, $d->{$n}{'r'}) = ($t, $b, $l, $r);
+    }
+    else {
+        ($o->{$n}{'t'}, $o->{$n}{'b'}, $o->{$n}{'l'}, $o->{$n}{'r'}) = ($t, $b, $l, $r);
+    }
+}
+
+# START OF DYNAMIC VARIABLES
+# ................................................
+
+# create the empty structure for the board, we fill it up with
+# window coordinates too.
+
+for my $x (1 .. 3) {
+    for my $y (1 .. 3) {
+        @{$bm->{$x}{$y}{'w_coords'}} = @{$co_b{"$x,$y"}};
+        $bm->{$x}{$y}{'owner'} = 2;  # 2 means, belongs to no one 1 = h, 0 = comp
+        my $r = $bm->{$x}{$y};       # ref for shorter writing
+        ($r->{'t'}, $r->{'r'}, $r->{'b'}, $r->{'l'}) = (0, 0, 0, 0); # top, right, ...
+    }
+}
+
+# set up computer and player deck with random cards
+
+for (1 .. 5) {
+    srand();
+    my $key = (keys %{$c})[rand keys %{$c}];
+    set_deck(0, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'});
+    srand();
+    $key = (keys %{$c})[rand keys %{$c}];
+    set_deck(1, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'});
+}
+
+print free_fields();
+my @list = find_cards_in_nbh(1,1,2);
+print Dumper(@list);
+print Dumper($d);
+print Dumper($o);
+exit;
+
+
+# initialize curses
+
+initscr;
+clear;
+noecho;
+start_color;
+raw;            # because we want the keys immediately
+
+
