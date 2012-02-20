@@ -164,7 +164,13 @@ sub check_played {
 
 # refresh everything
 sub refresh_board {
-    for (1..9) { 
+    for (1..9) {
+        if ($board->{$_}{'owner'} eq "H") {
+            bkgd($board->{$_}{'win'}, COLOR_PAIR(3));
+        }
+        elsif ($board->{$_}{'owner'} eq "C") {
+            bkgd($board->{$_}{'win'}, COLOR_PAIR(1));
+        }
         addstr($board->{$_}{'win'}, 1, 2, $board->{$_}{'u'});
         addstr($board->{$_}{'win'}, 3, 2, $board->{$_}{'d'});
         addstr($board->{$_}{'win'}, 2, 1, $board->{$_}{'l'});
@@ -247,7 +253,7 @@ sub focus_win {
         for (1 .. 9) {
             bkgd($board->{$_}{'win'}, COLOR_PAIR(5));
         }
-        bkgd($board->{$num}{'win'}, COLOR_PAIR(1));
+        bkgd($board->{$num}{'win'}, COLOR_PAIR(3));
     }
 }
 
@@ -369,7 +375,61 @@ while(1) {
         addstr($infowin, 1,1, "                                ");
         addstr($infowin, 1,1, "TURN: Computer");
         refresh($infowin);
-        sleep(5);
+        my $c_h; # calc hash
+        for my $p (1..9) {
+            next if ($board->{$p}{'owner'} eq "H" || $board->{$p}{'owner'} eq "C");
+            for my $c (1..5) {
+                next if ($opdeck->{$c}{'touched'} == 1);
+                    
+                    for (split //, "udlr") {  # berechnung der points
+                        if ($opdeck->{$c}{$_} eq 'A') {
+                            $c_h->{$p}{$c}{'points'} += 10;
+                        }
+                        else {
+                            $c_h->{$p}{$c}{'points'} += $opdeck->{$c}{$_};
+                        }
+                    }
+
+                    $c_h->{$p}{$c}{'epoints'}  = $c_h->{$p}{$c}{'points'};
+                    if ($p - 1 <= 0 || $board->{$p - 1}{'owner'} ne "") { # left edge is blocked
+                        if ($opdeck->{$c}{'l'} eq "A") {
+                            $c_h->{$p}{$c}{'epoints'} -= 10;
+                        }
+                        else {
+                            $c_h->{$p}{$c}{'epoints'} -= $opdeck->{$c}{'l'};
+                        }
+                    }
+                    if ($p - 3 <= 0 || $board->{$p - 3}{'owner'} ne "") { # top edge is blocked
+                        if ($opdeck->{$c}{'u'} eq "A") {
+                            $c_h->{$p}{$c}{'epoints'} -= 10;
+                        }
+                        else {
+                            $c_h->{$p}{$c}{'epoints'} -= $opdeck->{$c}{'u'};
+                        }
+                    }
+                    if ($p + 3 >= 10 || $board->{$p + 3}{'owner'} ne "") { # bottom edge is blocked
+                        if ($opdeck->{$c}{'d'} eq "A") {
+                            $c_h->{$p}{$c}{'epoints'} -= 10;
+                        }
+                        else {
+                            $c_h->{$p}{$c}{'epoints'} -= $opdeck->{$c}{'d'};
+                        }
+                    }
+                    if ($p + 1 >= 10 || $board->{$p + 1}{'owner'} ne "") { # right edge is blocked
+                        if ($opdeck->{$c}{'r'} eq "A") {
+                            $c_h->{$p}{$c}{'epoints'} -= 10;
+                        }
+                        else {
+                            $c_h->{$p}{$c}{'epoints'} -= $opdeck->{$c}{'r'};
+                        }
+                    }
+
+                    $c_h->{$p}{$c}{'points'}++;
+                        addstr($infowin, 1,1, "Card $c in position $p: $c_h->{$p}{$c}{'points'} /  $c_h->{$p}{$c}{'epoints'}");
+                        refresh($infowin);
+                        usleep(500000);
+            }
+        }
         $whosturn = 1;
     }
 }
