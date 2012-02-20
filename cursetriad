@@ -41,6 +41,9 @@ if ($COLS < 87 || $LINES < 34) {
     exit(1);
 }
 
+
+my @score = (5,5); # in the beginning it's always like this
+
 my %coords_to_num = (
     '1' => [1, 22], '2' => [1, 32], '3' => [1, 42], '4' => [8, 22], '5' => [8, 32],
     '6' => [8, 42], '7' => [15, 22], '8' => [15, 32], '9' => [15, 42]
@@ -59,10 +62,14 @@ my ($board, $deck, $opdeck);    # playboard, players deck, opponents deck
 
 my $mainwin = newwin(34, 87, 0, 0);
 my $infowin = subwin($mainwin, 5, 50, 24, 12);
+my $scorewin = subwin($mainwin, 3, 20, 29, 28);
 box($mainwin, 0,0);
 box($infowin, 0,0);
+box($scorewin, 0,0);
+addstr($scorewin, 1, 7, join " : ", @score);
 refresh($mainwin);
 refresh($infowin);
+refresh($scorewin);
 
 
 # fill up the game field with card positions 1 to 9 and the deck positions
@@ -87,16 +94,21 @@ for (1 .. 5) {
     $opdeck->{$_}{'touched'} = 0;
     box($opdeck->{$_}{'win'}, 0,0);
 }
-
-for (1 .. 9) {
-    $board->{$_}{'win'} = subwin($mainwin, 7,10, @{$coords_to_num{$_}});
-    $board->{$_}{'u'} = "";
-    $board->{$_}{'d'} = "";
-    $board->{$_}{'l'} = "";
-    $board->{$_}{'r'} = "";
-    $board->{$_}{'touched'} = 0;
-    $board->{$_}{'owner'} = 0; # space belongs to no one ... when played, this turns into H or C
-    box($board->{$_}{'win'}, 0,0);
+my $bm;
+my $j;
+for my $x (1 .. 3) {
+    for my $y (1 .. 3) {
+        $j++;
+        $board->{$j}{'win'} = subwin($mainwin, 7,10, @{$coords_to_num{$j}});
+        $board->{$j}{'u'} = "";
+        $board->{$j}{'d'} = "";
+        $board->{$j}{'l'} = "";
+        $board->{$j}{'r'} = "";
+        $board->{$j}{'touched'} = 0;
+        $board->{$j}{'owner'} = 0; # space belongs to no one ... when played, this turns into H or C
+        box($board->{$j}{'win'}, 0,0);
+        $bm->{$x}{$y} = $j;
+    }
 }
 
 # func: set_vals
@@ -178,7 +190,7 @@ sub refresh_board {
         refresh($board->{$_}{'win'});
     }
     for (1..5) {
-        next if $deck->{$_}{'touched'} == 1;
+        bkgd($deck->{$_}{'win'}, COLOR_PAIR(2)) if $deck->{$_}{'touched'} == 1;
         addstr($deck->{$_}{'win'}, 1, 2, $deck->{$_}{'u'});
         addstr($deck->{$_}{'win'}, 3, 2, $deck->{$_}{'d'});
         addstr($deck->{$_}{'win'}, 2, 1, $deck->{$_}{'l'});
@@ -187,7 +199,7 @@ sub refresh_board {
         refresh($deck->{$_}{'win'});
     }
     for (1..5) { 
-        next if $opdeck->{$_}{'touched'} == 1;
+        bkgd($opdeck->{$_}{'win'}, COLOR_PAIR(2)) if $opdeck->{$_}{'touched'} == 1;
         addstr($opdeck->{$_}{'win'}, 1, 2, $opdeck->{$_}{'u'});
         addstr($opdeck->{$_}{'win'}, 3, 2, $opdeck->{$_}{'d'});
         addstr($opdeck->{$_}{'win'}, 2, 1, $opdeck->{$_}{'l'});
@@ -256,18 +268,62 @@ sub focus_win {
         bkgd($board->{$num}{'win'}, COLOR_PAIR(3));
     }
 }
+srand;
+my $whosturn = int (rand(2)); # 0 = comp, 1 = human
 
-my $whosturn = 1; # 0 = comp, 1 = human
+sub numconv {
+    my $val = shift;
+    if ($val eq "A") {
+        $val = 10;
+    }
+    return $val;
+}
+
+sub upd_score {
+    addstr($scorewin, 1, 7, "$i - " . join " : ", @score);
+}
+
+sub playable_fields {
+    my $i = 0;
+    for (1..9) {
+        if ($board->{$_}{'owner'} ne "C" && $board->{$_}{'owner'} ne "H") {
+            $i++;
+        }
+    }
+    return $i;
+}
+
 
 while(1) {
+
+    if (playable_fields == 0) {
+        my $endwin = subwin($mainwin, 15, 50, 10, 12);
+        box($endwin, 0,0);
+        if ($score[0] > $score[1]) {
+            addstr($endwin, 2,2, "you lost");
+        }
+        elsif ($score[0] < $score[1]) {
+            addstr($endwin, 2,2, "you won");
+        }
+        else {
+            addstr($endwin, 2,2, "draw");
+        }
+        addstr($endwin, 3,2, "please press any key to quit");
+        overwrite($endwin, $mainwin);
+        refresh($endwin);
+        my $gna = getch($mainwin);
+        endwin();
+        exit(0);
+    }
+
+        
     if ($whosturn) {
-        $i++;
         addstr($infowin, 1,1, "                                ");
         addstr($infowin, 1, 1, "TURN: Player");
         refresh($infowin);
-
+        refresh($scorewin);
         refresh_board();
-        usleep(100000);
+        timeout($mainwin, -1);
         my $in = getch($mainwin);
 
         if ($in eq "q") {
@@ -346,18 +402,6 @@ while(1) {
                         }
                     }
                 }
-                #if ($blu eq KEY_UP) {
-                #    if ($boardfocus > 3) {
-                #        $boardfocus -= 3;
-                #        focus_win($boardfocus, "board");
-                #    }
-                #}
-                #if ($blu eq KEY_DOWN) {
-                #    if ($boardfocus < 7) {
-                #        $boardfocus += 3;
-                #        focus_win($boardfocus, "board");
-                #    }
-                #}
                 if ($blu eq ".") {
                     last;
                 }
@@ -367,6 +411,72 @@ while(1) {
             $deck->{$curfocus}{'touched'} = 1;
             $board->{$boardfocus}{'touched'} = 1;
             $board->{$boardfocus}{'owner'} = "H";
+            my @turnlist;
+            if ($boardfocus % 3 == 2) { # we aren't on the borders
+                if (defined $board->{$boardfocus - 1} && $board->{$boardfocus - 1}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus - 1}{'r'}) < numconv($deck->{$curfocus}{'l'})) {
+                        push @turnlist, $boardfocus - 1;
+                    }
+                }
+                if (defined $board->{$boardfocus + 1} && $board->{$boardfocus + 1}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus + 1}{'l'}) < numconv($deck->{$curfocus}{'r'})) {
+                        push @turnlist, $boardfocus + 1;
+                    }
+                }
+                if (defined $board->{$boardfocus - 3} && $board->{$boardfocus - 3}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus - 3}{'d'}) < numconv($deck->{$curfocus}{'u'})) {
+                        push @turnlist, $boardfocus - 3;
+                    }
+                }
+                if (defined $board->{$boardfocus + 3} && $board->{$boardfocus + 3}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus + 3}{'u'}) < numconv($deck->{$curfocus}{'d'})) {
+                        push @turnlist, $boardfocus + 3;
+                    }
+                }
+            }
+            elsif ($boardfocus % 3 == 1) {
+                if (defined $board->{$boardfocus + 1} && $board->{$boardfocus + 1}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus + 1}{'l'}) < numconv($deck->{$curfocus}{'r'})) {
+                        push @turnlist, $boardfocus + 1;
+                    }
+                }
+                if (defined $board->{$boardfocus - 3} && $board->{$boardfocus - 3}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus - 3}{'d'}) < numconv($deck->{$curfocus}{'u'})) {
+                        push @turnlist, $boardfocus - 3;
+                    }
+                }
+                if (defined $board->{$boardfocus + 3} && $board->{$boardfocus + 3}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus + 3}{'u'}) < numconv($deck->{$curfocus}{'d'})) {
+                        push @turnlist, $boardfocus + 3;
+                    }
+                }
+            }
+            elsif ($boardfocus % 3 == 0) { #right border
+                if (defined $board->{$boardfocus - 1} && $board->{$boardfocus - 1}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus - 1}{'r'}) < numconv($deck->{$curfocus}{'l'})) {
+                        push @turnlist, $boardfocus - 1;
+                    }
+                }
+                if (defined $board->{$boardfocus - 3} && $board->{$boardfocus - 3}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus - 3}{'d'}) < numconv($deck->{$curfocus}{'u'})) {
+                        push @turnlist, $boardfocus - 3;
+                    }
+                }
+                if (defined $board->{$boardfocus + 3} && $board->{$boardfocus + 3}{'owner'} eq "C") { # check if we can beat it
+                    if (numconv($board->{$boardfocus + 3}{'u'}) < numconv($deck->{$curfocus}{'d'})) {
+                        push @turnlist, $boardfocus + 3;
+                    }
+                }
+            }
+
+
+            for (@turnlist) {
+                $board->{$_}{'owner'} = "H";
+                $score[1]++;
+                $score[0]--;
+            }
+            upd_score();
+
             $whosturn = 0; # now it's comps choice
         }
     }
@@ -375,61 +485,126 @@ while(1) {
         addstr($infowin, 1,1, "                                ");
         addstr($infowin, 1,1, "TURN: Computer");
         refresh($infowin);
+        refresh($scorewin);
         my $c_h; # calc hash
         for my $p (1..9) {
             next if ($board->{$p}{'owner'} eq "H" || $board->{$p}{'owner'} eq "C");
             for my $c (1..5) {
                 next if ($opdeck->{$c}{'touched'} == 1);
-                    
-                    for (split //, "udlr") {  # berechnung der points
-                        if ($opdeck->{$c}{$_} eq 'A') {
-                            $c_h->{$p}{$c}{'points'} += 10;
-                        }
-                        else {
-                            $c_h->{$p}{$c}{'points'} += $opdeck->{$c}{$_};
-                        }
-                    }
 
-                    $c_h->{$p}{$c}{'epoints'}  = $c_h->{$p}{$c}{'points'};
-                    if ($p - 1 <= 0 || $board->{$p - 1}{'owner'} ne "") { # left edge is blocked
-                        if ($opdeck->{$c}{'l'} eq "A") {
-                            $c_h->{$p}{$c}{'epoints'} -= 10;
-                        }
-                        else {
-                            $c_h->{$p}{$c}{'epoints'} -= $opdeck->{$c}{'l'};
-                        }
+                for (split //, "udlr") {  # berechnung der points
+                    if ($opdeck->{$c}{$_} eq 'A') {
+                        $c_h->{$p}{$c}{'points'} += 10;
                     }
-                    if ($p - 3 <= 0 || $board->{$p - 3}{'owner'} ne "") { # top edge is blocked
-                        if ($opdeck->{$c}{'u'} eq "A") {
-                            $c_h->{$p}{$c}{'epoints'} -= 10;
-                        }
-                        else {
-                            $c_h->{$p}{$c}{'epoints'} -= $opdeck->{$c}{'u'};
-                        }
+                    else {
+                        $c_h->{$p}{$c}{'points'} += $opdeck->{$c}{$_};
                     }
-                    if ($p + 3 >= 10 || $board->{$p + 3}{'owner'} ne "") { # bottom edge is blocked
-                        if ($opdeck->{$c}{'d'} eq "A") {
-                            $c_h->{$p}{$c}{'epoints'} -= 10;
-                        }
-                        else {
-                            $c_h->{$p}{$c}{'epoints'} -= $opdeck->{$c}{'d'};
-                        }
-                    }
-                    if ($p + 1 >= 10 || $board->{$p + 1}{'owner'} ne "") { # right edge is blocked
-                        if ($opdeck->{$c}{'r'} eq "A") {
-                            $c_h->{$p}{$c}{'epoints'} -= 10;
-                        }
-                        else {
-                            $c_h->{$p}{$c}{'epoints'} -= $opdeck->{$c}{'r'};
-                        }
-                    }
+            }
 
-                    $c_h->{$p}{$c}{'points'}++;
-                        addstr($infowin, 1,1, "Card $c in position $p: $c_h->{$p}{$c}{'points'} /  $c_h->{$p}{$c}{'epoints'}");
-                        refresh($infowin);
-                        usleep(500000);
+            $c_h->{$p}{$c}{'epoints'}  = 0;
+            if ($p % 3 == 2 || $p % 3 == 0) { # we aren't on the left border
+                if ($p - 1 <= 0 || $board->{$p - 1}{'owner'}) { # left edge is blocked
+                    if ($opdeck->{$c}{'l'} eq "A") {
+                        $c_h->{$p}{$c}{'epoints'} += 10;
+                    }
+                    else {
+                        $c_h->{$p}{$c}{'epoints'} += $opdeck->{$c}{'l'};
+                    }
+                    if (defined $board->{$p - 1} && $board->{$p - 1}{'owner'} eq "H") { # check if we can beat it
+                        if (numconv($board->{$p - 1}{'r'}) < numconv($opdeck->{$c}{'l'})) {
+                            $c_h->{$p}{$c}{'turns'} += 10;
+                            push @{$c_h->{$p}{$c}{'turnlist'}}, $p - 1;
+                        }
+                    }
+                }
+            }
+            if ($p - 3 <= 0 || $board->{$p - 3}{'owner'}) { # top edge is blocked
+                if ($opdeck->{$c}{'u'} eq "A") {
+                    $c_h->{$p}{$c}{'epoints'} += 10;
+                }
+                else {
+                    $c_h->{$p}{$c}{'epoints'} += $opdeck->{$c}{'u'};
+                }
+                if (defined $board->{$p - 3} && $board->{$p - 3}{'owner'} eq "H") { # check if we can beat it
+                    if (numconv($board->{$p - 3}{'d'}) < numconv($opdeck->{$c}{'u'})) {
+                        $c_h->{$p}{$c}{'turns'} += 10;
+                        push @{$c_h->{$p}{$c}{'turnlist'}}, $p - 3;
+                    }
+                }
+            }
+            if ($p + 3 >= 10 || $board->{$p + 3}{'owner'}) { # bottom edge is blocked
+                if ($opdeck->{$c}{'d'} eq "A") {
+                    $c_h->{$p}{$c}{'epoints'} += 10;
+                }
+                else {
+                    $c_h->{$p}{$c}{'epoints'} += $opdeck->{$c}{'d'};
+                }
+                if (defined $board->{$p + 3} && $board->{$p + 3}{'owner'} eq "H") { # check if we can beat it
+                    if (numconv($board->{$p + 3}{'u'}) < numconv($opdeck->{$c}{'d'})) {
+                        $c_h->{$p}{$c}{'turns'} += 10;
+                        push @{$c_h->{$p}{$c}{'turnlist'}}, $p + 3;
+                    }
+                }
+            }
+            if ($p % 3 == 2 || $p % 3 == 1) { # we aren't on the right border
+                if ($p + 1 >= 10 || $board->{$p + 1}{'owner'}) { # right edge is blocked
+                    if ($opdeck->{$c}{'r'} eq "A") {
+                        $c_h->{$p}{$c}{'epoints'} += 10;
+                    }
+                    else {
+                        $c_h->{$p}{$c}{'epoints'} += $opdeck->{$c}{'r'};
+                    }
+                    if (defined $board->{$p + 1} && $board->{$p + 1}{'owner'} eq "H") { # check if we can beat it
+                        if (numconv($board->{$p + 1}{'l'}) < numconv($opdeck->{$c}{'r'})) {
+                            $c_h->{$p}{$c}{'turns'} += 10;
+                            push @{$c_h->{$p}{$c}{'turnlist'}}, $p + 1;
+                        }
+                    }
+                }
+            }
+
+            $c_h->{$p}{$c}{'turns'} += 10;
+            $c_h->{$p}{$c}{'points'}++;
+            $c_h->{$p}{$c}{'points'}++;
+            $c_h->{$p}{$c}{'epoints'}++;
+            $c_h->{$p}{$c}{'maxdmg'} = sprintf("%.10f", $c_h->{$p}{$c}{'turns'} / $c_h->{$p}{$c}{'points'});
+            my $mult = sprintf("%.10f", $c_h->{$p}{$c}{'points'} - $c_h->{$p}{$c}{'epoints'});
+            $c_h->{$p}{$c}{'maxdmg'} *= $mult;
+            addstr($infowin, 1,1,"                               ");
+            addstr($infowin, 1,1,"TURN: Computer");
+            addstr($infowin, 2,1,"                                   ");
+            addstr($infowin, 2,1, "Card $c in position $p: $c_h->{$p}{$c}{'turns'} / ($c_h->{$p}{$c}{'points'} * ( $c_h->{$p}{$c}{'points'} - ($c_h->{$p}{$c}{'epoints'})");
+            addstr($infowin, 3,1,"                                   ");
+            addstr($infowin, 3,1,"$c_h->{$p}{$c}{'maxdmg'}");
+            refresh($infowin);
+            usleep(500000);
+
             }
         }
+        my ($cn, $pn, $max) = (0, 0, 0);
+        for my $p(keys %{$c_h}) {
+            for my $c(keys %{$c_h->{$p}}) {
+                if ($c_h->{$p}{$c}{'maxdmg'} > $max) {
+                    $max = $c_h->{$p}{$c}{'maxdmg'};
+                    $cn = $c;
+                    $pn = $p;
+                }
+            }
+        }
+        addstr($infowin, 3,1,"                                        ");
+        addstr($infowin, 3,1,"BEST TRY with $c_h->{$pn}{$cn}{'maxdmg'}, card $cn on position $pn");
+        refresh($infowin);
+        usleep(2000000);
+        copy_ocard($cn, $pn);
+        $opdeck->{$cn}{'touched'} = 1;
+        $board->{$pn}{'touched'} = 1;
+        $board->{$pn}{'owner'} = "C";
+        for (@{$c_h->{$pn}{$cn}{'turnlist'}}) {
+            $board->{$_}{'owner'} = "C";
+            $score[0]++;
+            $score[1]--;
+        }
+        upd_score();
         $whosturn = 1;
     }
 }
