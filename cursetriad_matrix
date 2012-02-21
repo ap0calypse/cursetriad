@@ -8,7 +8,8 @@ use Data::Dumper;
 
 # needed variables
 
-my ($bm, $d, $o);   # board-matrix reference, deck-ref, comp-deck
+my ($bm, $d, $o);         # board-matrix reference, deck-ref, comp-deck
+my ($bm_w, $d_w, $o_w);   # board window reference, deck window ref, comp window ref
 my $c;              # card reference 
 my $cardfile = "./tt_cards.txt";
 my @score = (5, 5); # keep score .. obviously ...
@@ -116,14 +117,45 @@ sub set_deck {
     my ($type, $n, $t, $b, $l, $r, $na) = @_;
     if ($type) { # human deck
         ($d->{$n}{'t'}, $d->{$n}{'b'}, $d->{$n}{'l'}, $d->{$n}{'r'}, $d->{$n}{'n'}) = ($t, $b, $l, $r, $na);
+        $d->{$n}{'played'} = 0;
     }
     else {
         ($o->{$n}{'t'}, $o->{$n}{'b'}, $o->{$n}{'l'}, $o->{$n}{'r'}, $o->{$n}{'n'}) = ($t, $b, $l, $r, $na);
+        $o->{$n}{'played'} = 0;
     }
 }
 
 # START OF DYNAMIC VARIABLES
 # ................................................
+
+# initialize curses
+
+initscr;
+clear;
+noecho;
+start_color;
+raw;            # because we want the keys immediately
+
+init_pair(1, COLOR_RED,    COLOR_BLACK); # red on black
+init_pair(2, COLOR_BLACK,  COLOR_BLACK); # black on black (invisible)
+init_pair(3, COLOR_GREEN,  COLOR_BLACK); # green on black
+init_pair(4, COLOR_BLACK,  COLOR_GREEN); # black on green
+init_pair(5, COLOR_WHITE,  COLOR_BLACK); # white on black
+init_pair(6, COLOR_BLACK,  COLOR_WHITE); # black on white
+init_pair(7, COLOR_CYAN,   COLOR_BLACK); # cyan on black
+init_pair(8, COLOR_MAGENTA,COLOR_BLACK); # magenta on black
+
+# create the window that are always here (info, score and main)
+my $mainwin = newwin(34, 87, 0, 0);
+my $infowin = subwin($mainwin, 5, 50, 24, 12);
+my $scorewin = subwin($mainwin, 3, 20, 29, 28);
+box($infowin, 0,0);
+box($scorewin, 0,0);
+addstr($scorewin, 1, 7, join " : ", @score);
+refresh($mainwin);
+refresh($infowin);
+refresh($scorewin);
+
 
 # create the empty structure for the board, we fill it up with
 # window coordinates too.
@@ -134,6 +166,9 @@ for my $x (1 .. 3) {
         $bm->{$x}{$y}{'owner'} = 2;  # 2 means, belongs to no one 1 = h, 0 = comp
         my $r = $bm->{$x}{$y};       # ref for shorter writing
         ($r->{'t'}, $r->{'r'}, $r->{'b'}, $r->{'l'}) = (0, 0, 0, 0); # top, right, ...
+        $bm_w->{"$x,$y"} = subwin($mainwin, 7, 10, @{$co_b{"$x,$y"}});
+        box($bm_w->{"$x,$y"}, 0, 0);
+        refresh($bm_w->{"$x,$y"});
     }
 }
 
@@ -142,28 +177,29 @@ for my $x (1 .. 3) {
 for (1 .. 5) {
     srand();
     my $key = (keys %{$c})[rand keys %{$c}];
-    set_deck(0, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'},
-             $key);
-    srand();
-    $key = (keys %{$c})[rand keys %{$c}];
     set_deck(1, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'},
              $key);
+    $d_w->{$_} = subwin($mainwin, 7, 10, @{$co_d{$_}});
+    box($d_w->{$_}, 0, 0);
+    refresh($d_w->{$_});
+
+    srand();
+    $key = (keys %{$c})[rand keys %{$c}];
+    set_deck(0, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'},
+             $key);
+    $o_w->{$_} = subwin($mainwin, 7, 10, @{$co_o{$_}});
+    box($o_w->{$_}, 0, 0);
+    refresh($o_w->{$_});
 }
 
-print free_fields();
-my @list = find_cards_in_nbh(1,1,2);
-print Dumper(@list);
-print Dumper($d);
-print Dumper($o);
-exit;
+# check if terminal is big enough
+if ($COLS < 87 || $LINES < 34) {
+    endwin();
+    print "Your terminal window needs to be bigger.\n";
+    exit(1);
+}
 
 
-# initialize curses
-
-initscr;
-clear;
-noecho;
-start_color;
-raw;            # because we want the keys immediately
-
+sleep 2;
+endwin();
 
