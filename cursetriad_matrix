@@ -113,12 +113,12 @@ sub free_fields {
 # sets the deck of human or comp to a specific value
 # ................................................
 sub set_deck {
-    my ($type, $n, $t, $b, $l, $r) = @_;
+    my ($type, $n, $t, $b, $l, $r, $na) = @_;
     if ($type) { # human deck
-        ($d->{$n}{'t'}, $d->{$n}{'b'}, $d->{$n}{'l'}, $d->{$n}{'r'}) = ($t, $b, $l, $r);
+        ($d->{$n}{'t'}, $d->{$n}{'b'}, $d->{$n}{'l'}, $d->{$n}{'r'}, $d->{$n}{'n'}) = ($t, $b, $l, $r, $na);
     }
     else {
-        ($o->{$n}{'t'}, $o->{$n}{'b'}, $o->{$n}{'l'}, $o->{$n}{'r'}) = ($t, $b, $l, $r);
+        ($o->{$n}{'t'}, $o->{$n}{'b'}, $o->{$n}{'l'}, $o->{$n}{'r'}, $o->{$n}{'n'}) = ($t, $b, $l, $r, $na);
     }
 }
 
@@ -142,10 +142,12 @@ for my $x (1 .. 3) {
 for (1 .. 5) {
     srand();
     my $key = (keys %{$c})[rand keys %{$c}];
-    set_deck(0, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'});
+    set_deck(0, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'},
+             $key);
     srand();
     $key = (keys %{$c})[rand keys %{$c}];
-    set_deck(1, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'});
+    set_deck(1, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'},
+             $key);
 }
 
 print free_fields();
