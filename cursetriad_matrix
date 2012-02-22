@@ -114,16 +114,41 @@ sub free_fields {
 # sets the deck of human or comp to a specific value
 # ................................................
 sub set_deck {
-    my ($type, $n, $t, $b, $l, $r, $na) = @_;
+    my ($type, $n, $t, $b, $l, $r, $na, $el) = @_;
     if ($type) { # human deck
         ($d->{$n}{'t'}, $d->{$n}{'b'}, $d->{$n}{'l'}, $d->{$n}{'r'}, $d->{$n}{'n'}) = ($t, $b, $l, $r, $na);
+        $d->{$n}{'elem'} = $el;
         $d->{$n}{'played'} = 0;
     }
     else {
         ($o->{$n}{'t'}, $o->{$n}{'b'}, $o->{$n}{'l'}, $o->{$n}{'r'}, $o->{$n}{'n'}) = ($t, $b, $l, $r, $na);
+        $o->{$n}{'elem'} = $el;
         $o->{$n}{'played'} = 0;
     }
 }
+
+# function: copy_to_board 
+# copies the card values from either deck to the board
+# ................................................
+sub copy_to_board {
+    my $ref;
+    my ($who, $from, $to_x, $to_y) = @_;
+    $who == 1 ? $ref = $d : $ref = $o;
+    $bm->{$to_x}{$to_y}{'t'} = $ref->{$from}{'t'};
+    $bm->{$to_x}{$to_y}{'b'} = $ref->{$from}{'b'};
+    $bm->{$to_x}{$to_y}{'l'} = $ref->{$from}{'l'};
+    $bm->{$to_x}{$to_y}{'r'} = $ref->{$from}{'r'};
+    if (!defined $bm->{$to_x}{$to_y}{'elem'}) {
+        $bm->{$to_x}{$to_y}{'enh'} = 0;
+    }
+    elsif ($bm->{$to_x}{$to_y}{'elem'} eq $ref->{$from}{'elem'}) {
+        $bm->{$to_x}{$to_y}{'enh'} = 1;
+    }
+    elsif ($bm->{$to_x}{$to_y}{'elem'} ne $ref->{$from}{'elem'}) {
+        $bm->{$to_x}{$to_y}{'enh'} = -1;
+    }
+}
+
 
 # START OF DYNAMIC VARIABLES
 # ................................................
@@ -178,7 +203,7 @@ for (1 .. 5) {
     srand();
     my $key = (keys %{$c})[rand keys %{$c}];
     set_deck(1, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'},
-             $key);
+             $key, $c->{$key}{'elem'});
     $d_w->{$_} = subwin($mainwin, 7, 10, @{$co_d{$_}});
     box($d_w->{$_}, 0, 0);
     refresh($d_w->{$_});
@@ -186,7 +211,7 @@ for (1 .. 5) {
     srand();
     $key = (keys %{$c})[rand keys %{$c}];
     set_deck(0, $_, $c->{$key}{'t'}, $c->{$key}{'b'}, $c->{$key}{'l'}, $c->{$key}{'r'},
-             $key);
+             $key, $c->{$key}{'elem'});
     $o_w->{$_} = subwin($mainwin, 7, 10, @{$co_o{$_}});
     box($o_w->{$_}, 0, 0);
     refresh($o_w->{$_});
